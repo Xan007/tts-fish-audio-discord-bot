@@ -1,6 +1,12 @@
 # TTS Discord Bot
 
-Discord TTS bot powered by Fish Audio. Each user selects their own voice from the Fish Audio Voice Library; synthesis plays back in the user's voice channel.
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python Version" />
+  <img src="https://img.shields.io/badge/discord.py-2.7+-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord.py" />
+  <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License MIT" />
+</p>
+
+Discord TTS bot powered by **Fish Audio**. Each user selects their own voice from the Fish Audio Voice Library; synthesis plays back in the user's voice channel in real time.
 
 ## Features
 

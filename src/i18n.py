@@ -172,9 +172,14 @@ STRINGS: dict[str, dict[str, str]] = {
         "es": "El bot te responderá en **{language}**.",
     },
     # message notes spoken aloud
-    "note_url": {"en": "link sent", "es": "enlace enviado"},
-    "note_image": {"en": "image sent", "es": "imagen enviada"},
-    "note_file": {"en": "file sent", "es": "archivo enviado"},
+    "note_url": {"en": "link", "es": "enlace"},
+    "note_image": {"en": "image", "es": "imagen"},
+    "note_video": {"en": "video", "es": "video"},
+    "note_audio": {"en": "audio note", "es": "audio"},
+    "note_file": {"en": "attached file", "es": "archivo adjunto"},
+    "note_code": {"en": "code block", "es": "bloque de código"},
+    "note_sticker": {"en": "sticker", "es": "sticker"},
+    "note_gif": {"en": "GIF", "es": "GIF"},
 }
 
 

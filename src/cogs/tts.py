@@ -37,7 +37,7 @@ class TTSCommands(commands.Cog):
 
         await interaction.response.defer(ephemeral=False)
         language = await get_language_for_user(None, member.id, interaction=interaction)
-        cleaned = await clean_text_for_tts(text, interaction)
+        cleaned = await clean_text_for_tts(text, interaction, language=language)
         if not cleaned.strip():
             await interaction.followup.send(
                 t(language, "tts_empty"), ephemeral=True
