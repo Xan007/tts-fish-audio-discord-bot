@@ -65,8 +65,23 @@ Slash commands sync to every guild the bot is in on startup (appear instantly). 
 | `/voice volume <-20 to 20>` | Set your volume adjustment in dB. |
 | `/autojoin enable` | Enable auto-join on your current voice channel. Reads chat in that channel or linked text channels/threads. |
 | `/autojoin disable` | Disable auto-join on your current voice channel. |
+| `/stop` | Immediately stops audio playback and clears the queued messages in the server. |
+| `/skip` | Skips the current audio playing in the server. |
 | `/language` | Set your UI and response language preference (`auto`, `en`, `es`). |
 | `/help` | Interactive quick start guide. |
+
+## 🐳 Docker Deployment
+
+You can run the bot in Docker with zero setup for Python or FFmpeg:
+
+```bash
+docker compose up -d --build
+```
+
+Logs can be viewed anytime via:
+```bash
+docker compose logs -f
+```
 
 ## Architecture
 

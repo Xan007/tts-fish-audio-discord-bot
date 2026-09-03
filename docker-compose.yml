@@ -1,0 +1,13 @@
+﻿services:
+  tts-bot:
+    build: .
+    container_name: tts-discord-bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - bot_data:/app/data
+
+volumes:
+  bot_data:
+    driver: local

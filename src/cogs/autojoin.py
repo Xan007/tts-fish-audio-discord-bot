@@ -131,13 +131,24 @@ class AutojoinCommands(commands.Cog):
             if row.text_channel_id == 0 or row.text_channel_id == message.channel.id:
                 voice_channel = message.guild.get_channel(row.voice_channel_id)
                 if isinstance(voice_channel, discord.VoiceChannel):
-                    await speak_in_channel(
+                    result = await speak_in_channel(
                         message.guild,
                         voice_channel,
                         message.author.id,
+                        message.author.display_name,
                         text,
                         language=language,
                     )
+                    if result.ok and len(text) >= 150:
+                        from src.cogs.tts import CancelTTSView
+                        view = CancelTTSView(message.author.id, message.guild.id, language)
+                        try:
+                            view.message = await message.reply(
+                                view=view,
+                                mention_author=False,
+                            )
+                        except discord.HTTPException:
+                            pass
                 break
 
     @commands.Cog.listener()

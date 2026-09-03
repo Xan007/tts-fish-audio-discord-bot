@@ -165,6 +165,15 @@ class SpeechPipeline:
         await self._manager.enqueue(vc, audio)
         return SpeakResult(True, t(job.language, "p_playing"))
 
+    def stop(self, guild_id: int) -> None:
+        """Cancel queued speech synthesis jobs and stop audio playback."""
+        self.cleanup(guild_id)
+        self._manager.stop(guild_id)
+
+    def skip(self, guild_id: int) -> None:
+        """Skip currently playing audio."""
+        self._manager.skip(guild_id)
+
     def cleanup(self, guild_id: int) -> None:
         queue = self._queues.pop(guild_id, None)
         if queue is not None:

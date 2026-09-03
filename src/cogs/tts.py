@@ -7,11 +7,65 @@ from discord import app_commands
 from discord.app_commands import locale_str
 from discord.ext import commands
 
+from src.audio.playback import playback
 from src.cogs.speak import speak_for_member
 from src.i18n import get_language_for_user, t
 from src.speech.filters import clean_text_for_tts
+from src.speech.pipeline import pipeline
+from src.ui.catalog import ACCENT_COLOR
 
 logger = logging.getLogger(__name__)
+
+LONG_MESSAGE_THRESHOLD = 150
+
+
+class CancelTTSView(discord.ui.View):
+    """Subtle view with a Cancel button that auto-deletes when finished or cancelled."""
+
+    def __init__(self, author_id: int, guild_id: int, language: str) -> None:
+        super().__init__(timeout=90)
+        self.author_id = author_id
+        self.guild_id = guild_id
+        self.language = language
+        self.message: discord.Message | None = None
+        self.cancel_button = discord.ui.Button(
+            label=t(language, "cancel_btn"),
+            style=discord.ButtonStyle.secondary,
+        )
+        self.cancel_button.callback = self.on_cancel
+        self.add_item(self.cancel_button)
+
+    async def on_timeout(self) -> None:
+        """Silently remove the cancel button when the message duration elapses."""
+        if self.message is not None:
+            try:
+                await self.message.delete()
+            except discord.HTTPException:
+                pass
+
+    async def on_cancel(self, interaction: discord.Interaction) -> None:
+        is_author = interaction.user.id == self.author_id
+        is_admin = (
+            isinstance(interaction.user, discord.Member)
+            and interaction.user.guild_permissions.administrator
+        )
+        if not (is_author or is_admin):
+            await interaction.response.send_message(
+                t(self.language, "cancel_perm_error"), ephemeral=True
+            )
+            return
+
+        pipeline.stop(self.guild_id)
+        self.stop()
+        if self.message is not None:
+            try:
+                await self.message.delete()
+            except discord.HTTPException:
+                pass
+        await interaction.response.send_message(
+            t(self.language, "cancelled_by", user=interaction.user.display_name),
+            ephemeral=True,
+        )
 
 
 class TTSCommands(commands.Cog):
@@ -43,11 +97,47 @@ class TTSCommands(commands.Cog):
                 t(language, "tts_empty"), ephemeral=True
             )
             return
+
         result = await speak_for_member(member, cleaned, language=language)
         if result.ok:
-            await interaction.followup.send(result.message)
+            if len(cleaned) >= LONG_MESSAGE_THRESHOLD and interaction.guild_id:
+                view = CancelTTSView(interaction.user.id, interaction.guild_id, language)
+                view.message = await interaction.followup.send(
+                    f"> *{cleaned[:150]}...*",
+                    view=view,
+                )
+            else:
+                await interaction.followup.send(result.message)
         else:
             await interaction.followup.send(result.message, ephemeral=True)
+
+    @app_commands.command(
+        name="stop",
+        description=locale_str(
+            "Stop the current speech playback and clear the guild queue.",
+            **{"es-ES": "Detiene la reproducción actual y vacía la cola de voz."},
+        ),
+    )
+    async def stop(self, interaction: discord.Interaction) -> None:
+        if interaction.guild_id is None:
+            return
+        language = await get_language_for_user(None, interaction.user.id, interaction=interaction)
+        pipeline.stop(interaction.guild_id)
+        await interaction.response.send_message(t(language, "stop_success"), ephemeral=False)
+
+    @app_commands.command(
+        name="skip",
+        description=locale_str(
+            "Skip the current speech audio.",
+            **{"es-ES": "Salta el audio de voz actual."},
+        ),
+    )
+    async def skip(self, interaction: discord.Interaction) -> None:
+        if interaction.guild_id is None:
+            return
+        language = await get_language_for_user(None, interaction.user.id, interaction=interaction)
+        pipeline.skip(interaction.guild_id)
+        await interaction.response.send_message(t(language, "skip_success"), ephemeral=False)
 
 
 async def setup(bot: commands.Bot) -> None:

@@ -171,6 +171,16 @@ STRINGS: dict[str, dict[str, str]] = {
         "en": "The bot will reply to you in **{language}**.",
         "es": "El bot te responderá en **{language}**.",
     },
+    # controls & cancels
+    "stop_success": {"en": "Stopped playback and cleared the queue.", "es": "Reproducción detenida y cola vaciada."},
+    "skip_success": {"en": "Skipped current audio.", "es": "Audio actual saltado."},
+    "cancel_btn": {"en": "Cancel", "es": "Cancelar"},
+    "cancelled_by": {"en": "Cancelled by {user}.", "es": "Cancelado por {user}."},
+    "cancel_perm_error": {
+        "en": "Only the author of this message or an administrator can cancel it.",
+        "es": "Solo el autor de este mensaje o un administrador pueden cancelarlo.",
+    },
+    "author_says": {"en": "{name} says: {text}", "es": "{name} dice: {text}"},
     # message notes spoken aloud
     "note_url": {"en": "link", "es": "enlace"},
     "note_image": {"en": "image", "es": "imagen"},

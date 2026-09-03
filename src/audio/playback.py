@@ -314,6 +314,24 @@ class PlaybackManager:
             return True
         return False
 
+    def stop(self, guild_id: int) -> None:
+        """Stop current audio and clear the queue for the given guild."""
+        queue = self._queues.get(guild_id)
+        if queue is not None:
+            while not queue.empty():
+                item = queue.get_nowait()
+                if isinstance(item, StreamSource):
+                    item.cancel()
+        vc = self._clients.get(guild_id)
+        if vc is not None and vc.is_playing():
+            vc.stop()
+
+    def skip(self, guild_id: int) -> None:
+        """Skip currently playing audio for the guild."""
+        vc = self._clients.get(guild_id)
+        if vc is not None and vc.is_playing():
+            vc.stop()
+
     def cleanup(self, guild_id: int) -> None:
         task = self._tasks.pop(guild_id, None)
         if task is not None and not task.done():
