@@ -1,0 +1,16 @@
+[project]
+name = "tts-discord-bot"
+version = "0.1.0"
+description = "Discord TTS bot using Fish Audio with per-user voice selection"
+requires-python = ">=3.11"
+dependencies = [
+    "discord.py[voice]>=2.7.1",
+    "sqlalchemy[asyncio]>=2.0.0",
+    "aiosqlite>=0.20.0",
+    "fish-audio-sdk>=1.3.0",
+    "python-dotenv>=1.0.1",
+    "httpx>=0.27.0",
+]
+
+[tool.uv]
+package = false
