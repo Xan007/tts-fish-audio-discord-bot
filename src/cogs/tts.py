@@ -55,7 +55,7 @@ class CancelTTSView(discord.ui.View):
             )
             return
 
-        pipeline.stop(self.guild_id)
+        pipeline.skip(self.guild_id)
         self.stop()
         if self.message is not None:
             try:
