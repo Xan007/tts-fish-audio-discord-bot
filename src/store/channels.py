@@ -64,7 +64,7 @@ async def get_autojoin_for_text_channel(
 ) -> list[AutojoinChannel]:
     stmt = select(GuildAutojoinModel).where(
         GuildAutojoinModel.guild_id == guild_id,
-        GuildAutojoinModel.text_channel_id == text_channel_id,
+        GuildAutojoinModel.text_channel_id.in_([text_channel_id, 0]),
         GuildAutojoinModel.enabled == 1,
     )
     result = await session.execute(stmt)
