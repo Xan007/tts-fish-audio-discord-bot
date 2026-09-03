@@ -128,13 +128,26 @@ async def _stream_segment(
 ) -> AsyncIterator[bytes]:
     try:
         client = create_client()
-        stream = await client.tts.stream(
-            text=text,
-            reference_id=reference_id,
-            config=_build_config(speed, volume_db),
-            model=model,
+        stream = await asyncio.wait_for(
+            client.tts.stream(
+                text=text,
+                reference_id=reference_id,
+                config=_build_config(speed, volume_db),
+                model=model,
+            ),
+            timeout=15.0,
         )
-        async for chunk in stream:
-            yield chunk
+        aiter = stream.__aiter__()
+        while True:
+            try:
+                chunk = await asyncio.wait_for(aiter.__anext__(), timeout=12.0)
+                yield chunk
+            except StopAsyncIteration:
+                break
+            except asyncio.TimeoutError as e:
+                logger.warning("Timeout while streaming chunk from Fish Audio for segment: %s...", text[:30])
+                raise TTSNetworkError("Fish Audio stream timed out") from e
+    except asyncio.TimeoutError as e:
+        raise TTSNetworkError("Fish Audio connection timed out") from e
     except FishAudioError as e:
         raise _translate_error(e) from e

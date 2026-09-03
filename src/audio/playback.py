@@ -141,14 +141,18 @@ class PlaybackManager:
             return vc
 
     async def enqueue(
-        self, voice_client: discord.VoiceClient, data: bytes | StreamSource
+        self,
+        voice_client: discord.VoiceClient,
+        data: bytes | StreamSource,
+        on_start: Callable[[], Coroutine[Any, Any, None]] | None = None,
+        on_end: Callable[[], Coroutine[Any, Any, None]] | None = None,
     ) -> None:
         guild_id = voice_client.guild.id
         self._clients[guild_id] = voice_client
         if voice_client.channel is not None:
             self._channels[guild_id] = voice_client.channel
         queue = self._queues.setdefault(guild_id, asyncio.Queue())
-        await queue.put(data)
+        await queue.put((data, on_start, on_end))
         task = self._tasks.get(guild_id)
         if task is None or task.done():
             self._tasks[guild_id] = asyncio.create_task(self._run(guild_id))
@@ -176,7 +180,7 @@ class PlaybackManager:
                     if await self._maybe_disconnect(vc):
                         break
                     try:
-                        data = await asyncio.wait_for(
+                        item = await asyncio.wait_for(
                             queue.get(), timeout=idle_timeout
                         )
                     except asyncio.TimeoutError:
@@ -190,16 +194,34 @@ class PlaybackManager:
                             pass
                         break
                 else:
-                    data = await queue.get()
+                    item = await queue.get()
+
+                data, on_start, on_end = item
+                if on_start is not None:
+                    try:
+                        res = on_start()
+                        if asyncio.iscoroutine(res):
+                            await res
+                    except Exception:
+                        logger.exception("Error in playback on_start callback")
                 try:
                     await self._play(vc, data)
                 except Exception:
                     logger.exception("Playback failed in guild %s", guild_id)
+                finally:
+                    if on_end is not None:
+                        try:
+                            res = on_end()
+                            if asyncio.iscoroutine(res):
+                                await res
+                        except Exception:
+                            logger.exception("Error in playback on_end callback")
         finally:
             while not queue.empty():
                 item = queue.get_nowait()
-                if isinstance(item, StreamSource):
-                    item.cancel()
+                data = item[0] if isinstance(item, tuple) else item
+                if isinstance(data, StreamSource):
+                    data.cancel()
 
     @classmethod
     async def _play(
@@ -320,8 +342,9 @@ class PlaybackManager:
         if queue is not None:
             while not queue.empty():
                 item = queue.get_nowait()
-                if isinstance(item, StreamSource):
-                    item.cancel()
+                data = item[0] if isinstance(item, tuple) else item
+                if isinstance(data, StreamSource):
+                    data.cancel()
         vc = self._clients.get(guild_id)
         if vc is not None and vc.is_playing():
             vc.stop()
@@ -340,8 +363,9 @@ class PlaybackManager:
         if queue is not None:
             while not queue.empty():
                 item = queue.get_nowait()
-                if isinstance(item, StreamSource):
-                    item.cancel()
+                data = item[0] if isinstance(item, tuple) else item
+                if isinstance(data, StreamSource):
+                    data.cancel()
         self._clients.pop(guild_id, None)
         self._channels.pop(guild_id, None)
         self._connect_locks.pop(guild_id, None)

@@ -19,8 +19,12 @@ logger = logging.getLogger(__name__)
 LONG_MESSAGE_THRESHOLD = 150
 
 
+# Tracks the currently active CancelTTSView per guild_id
+_active_cancel_views: dict[int, CancelTTSView] = {}
+
+
 class CancelTTSView(discord.ui.View):
-    """Subtle view with a Cancel button that auto-deletes when finished or cancelled."""
+    """Subtle view with a Cancel button that auto-deletes when finished or replaced."""
 
     def __init__(self, author_id: int, guild_id: int, language: str) -> None:
         super().__init__(timeout=90)
@@ -35,13 +39,28 @@ class CancelTTSView(discord.ui.View):
         self.cancel_button.callback = self.on_cancel
         self.add_item(self.cancel_button)
 
-    async def on_timeout(self) -> None:
-        """Silently remove the cancel button when the message duration elapses."""
+    async def register(self, message: discord.Message) -> None:
+        """Register this view as the active cancel view for the guild, removing any previous one."""
+        self.message = message
+        old_view = _active_cancel_views.get(self.guild_id)
+        if old_view is not None and old_view is not self:
+            await old_view.dismiss()
+        _active_cancel_views[self.guild_id] = self
+
+    async def dismiss(self) -> None:
+        """Silently dismiss and delete this cancel button."""
+        self.stop()
+        if _active_cancel_views.get(self.guild_id) is self:
+            _active_cancel_views.pop(self.guild_id, None)
         if self.message is not None:
             try:
                 await self.message.delete()
             except discord.HTTPException:
                 pass
+
+    async def on_timeout(self) -> None:
+        """Silently remove the cancel button when timeout occurs."""
+        await self.dismiss()
 
     async def on_cancel(self, interaction: discord.Interaction) -> None:
         is_author = interaction.user.id == self.author_id
@@ -56,12 +75,7 @@ class CancelTTSView(discord.ui.View):
             return
 
         pipeline.skip(self.guild_id)
-        self.stop()
-        if self.message is not None:
-            try:
-                await self.message.delete()
-            except discord.HTTPException:
-                pass
+        await self.dismiss()
         await interaction.response.send_message(
             t(self.language, "cancelled_by", user=interaction.user.display_name),
             ephemeral=True,
@@ -98,18 +112,39 @@ class TTSCommands(commands.Cog):
             )
             return
 
-        result = await speak_for_member(member, cleaned, language=language)
-        if result.ok:
-            if len(cleaned) >= LONG_MESSAGE_THRESHOLD and interaction.guild_id:
-                view = CancelTTSView(interaction.user.id, interaction.guild_id, language)
-                view.message = await interaction.followup.send(
-                    f"> *{cleaned[:150]}...*",
-                    view=view,
-                )
+        if len(cleaned) >= LONG_MESSAGE_THRESHOLD and interaction.guild_id:
+            view = CancelTTSView(interaction.user.id, interaction.guild_id, language)
+
+            async def on_start() -> None:
+                try:
+                    msg = await interaction.channel.send(
+                        f"> *{cleaned[:150]}...*",
+                        view=view,
+                    )
+                    await view.register(msg)
+                except Exception:
+                    pass
+
+            async def on_end() -> None:
+                await view.dismiss()
+
+            result = await speak_for_member(
+                member,
+                cleaned,
+                language=language,
+                on_play_start=on_start,
+                on_play_end=on_end,
+            )
+            if not result.ok:
+                await interaction.followup.send(result.message, ephemeral=True)
             else:
                 await interaction.followup.send(result.message)
         else:
-            await interaction.followup.send(result.message, ephemeral=True)
+            result = await speak_for_member(member, cleaned, language=language)
+            if result.ok:
+                await interaction.followup.send(result.message)
+            else:
+                await interaction.followup.send(result.message, ephemeral=True)
 
     @app_commands.command(
         name="stop",

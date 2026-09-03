@@ -121,11 +121,27 @@ async def clean_text_for_tts(
 
 
 def _normalize_text(text: str) -> str:
-    """Collapse duplicate punctuation and excessive whitespace."""
+    """Collapse duplicate punctuation, excessive whitespace, and repeated spam words."""
     # Collapse multiple spaces and newlines
     text = re.sub(r"\s+", " ", text).strip()
     # Collapse excessive punctuation (e.g. !!!!!!! -> !)
     text = re.sub(r"([!?.,])\1{2,}", r"\1\1", text)
+
+    # Collapse repetitive spam words (e.g. 'palabra' repeated 10 times -> maximum 3 times)
+    words = text.split(" ")
+    if len(words) > 3:
+        cleaned_words: list[str] = []
+        repeat_count = 1
+        for i, word in enumerate(words):
+            if i > 0 and word.lower() == words[i - 1].lower():
+                repeat_count += 1
+                if repeat_count <= 3:
+                    cleaned_words.append(word)
+            else:
+                repeat_count = 1
+                cleaned_words.append(word)
+        text = " ".join(cleaned_words)
+
     return text
 
 

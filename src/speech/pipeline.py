@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable, Coroutine
 from dataclasses import dataclass
+from typing import Any
 
 import discord
 
@@ -33,6 +34,8 @@ class SpeechJob:
     text: str
     language: str = "en"
     future: asyncio.Future | None = None
+    on_play_start: Callable[[], Coroutine[Any, Any, None]] | None = None
+    on_play_end: Callable[[], Coroutine[Any, Any, None]] | None = None
 
 
 def _voice_settings(user_voice: users.UserVoice | None) -> tuple[str, float, int]:
@@ -45,10 +48,8 @@ def _voice_settings(user_voice: users.UserVoice | None) -> tuple[str, float, int
 class SpeechPipeline:
     """FIFO speech queue per guild with bounded Fish Audio concurrency.
 
-    Messages are processed in submission order per guild. Up to
-    ``max_concurrency`` messages are synthesized in parallel at any time
-    (across all guilds), but audio is enqueued for playback strictly in
-    order, so a fast request can never overtake a slow one.
+    Messages are processed strictly in submission order per guild. Audio
+    is synthesized and enqueued for playback strictly in order.
     """
 
     def __init__(
@@ -70,6 +71,8 @@ class SpeechPipeline:
         user_id: int,
         text: str,
         language: str = "en",
+        on_play_start: Callable[[], Coroutine[Any, Any, None]] | None = None,
+        on_play_end: Callable[[], Coroutine[Any, Any, None]] | None = None,
     ) -> SpeakResult:
         job = SpeechJob(
             guild_id=guild_id,
@@ -77,6 +80,8 @@ class SpeechPipeline:
             user_id=user_id,
             text=text,
             language=language,
+            on_play_start=on_play_start,
+            on_play_end=on_play_end,
         )
         job.future = asyncio.get_running_loop().create_future()
         queue = self._queues.setdefault(guild_id, asyncio.Queue())
@@ -101,26 +106,18 @@ class SpeechPipeline:
         queue = self._queues[guild_id]
         try:
             while True:
-                batch = [await queue.get()]
-                for _ in range(self._max_concurrency - 1):
-                    try:
-                        batch.append(queue.get_nowait())
-                    except asyncio.QueueEmpty:
-                        break
+                job = await queue.get()
                 try:
-                    results = await asyncio.gather(
-                        *(self._synthesize(job) for job in batch)
-                    )
-                    for job, (audio, result) in zip(batch, results):
-                        if audio is not None:
-                            result = await self._play_audio(job, audio)
-                        self._resolve(job, result)
+                    audio, result = await self._synthesize(job)
+                    if audio is not None:
+                        result = await self._play_audio(job, audio)
+                    self._resolve(job, result)
                 except asyncio.CancelledError:
-                    self._fail_batch(batch, t(job.language, "p_stopped"))
+                    self._resolve(job, SpeakResult(False, t(job.language, "p_stopped")))
                     raise
                 except Exception:
-                    logger.exception("Speech pipeline crashed in guild %s", guild_id)
-                    self._fail_batch(batch, t(job.language, "p_crashed"))
+                    logger.exception("Speech job failed in guild %s", guild_id)
+                    self._resolve(job, SpeakResult(False, t(job.language, "p_crashed")))
         except asyncio.CancelledError:
             raise
         except Exception:
@@ -162,7 +159,12 @@ class SpeechPipeline:
             audio.cancel()
             logger.exception("Failed to connect to voice channel for user %s", job.user_id)
             return SpeakResult(False, t(job.language, "p_join_fail", error=e))
-        await self._manager.enqueue(vc, audio)
+        await self._manager.enqueue(
+            vc,
+            audio,
+            on_start=job.on_play_start,
+            on_end=job.on_play_end,
+        )
         return SpeakResult(True, t(job.language, "p_playing"))
 
     def stop(self, guild_id: int) -> None:

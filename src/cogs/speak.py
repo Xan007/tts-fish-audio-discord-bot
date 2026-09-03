@@ -5,6 +5,9 @@ import discord
 from src.i18n import t
 from src.speech.pipeline import SpeakResult, pipeline
 
+from collections.abc import Callable, Coroutine
+from typing import Any
+
 # Tracks the last speaker user_id per guild_id
 _last_speaker: dict[int, int] = {}
 
@@ -29,6 +32,8 @@ async def speak_for_member(
     text: str,
     language: str = "en",
     include_prefix: bool = False,
+    on_play_start: Callable[[], Coroutine[Any, Any, None]] | None = None,
+    on_play_end: Callable[[], Coroutine[Any, Any, None]] | None = None,
 ) -> SpeakResult:
     voice_state = member.voice
     if voice_state is None or voice_state.channel is None:
@@ -38,7 +43,13 @@ async def speak_for_member(
             member.guild.id, member.id, member.display_name, text, language=language
         )
     return await pipeline.submit(
-        member.guild.id, voice_state.channel, member.id, text, language=language
+        member.guild.id,
+        voice_state.channel,
+        member.id,
+        text,
+        language=language,
+        on_play_start=on_play_start,
+        on_play_end=on_play_end,
     )
 
 
@@ -49,8 +60,18 @@ async def speak_in_channel(
     author_name: str,
     text: str,
     language: str = "en",
+    on_play_start: Callable[[], Coroutine[Any, Any, None]] | None = None,
+    on_play_end: Callable[[], Coroutine[Any, Any, None]] | None = None,
 ) -> SpeakResult:
     text = format_text_for_speaker(
         guild.id, user_id, author_name, text, language=language
     )
-    return await pipeline.submit(guild.id, channel, user_id, text, language=language)
+    return await pipeline.submit(
+        guild.id,
+        channel,
+        user_id,
+        text,
+        language=language,
+        on_play_start=on_play_start,
+        on_play_end=on_play_end,
+    )

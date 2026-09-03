@@ -131,24 +131,39 @@ class AutojoinCommands(commands.Cog):
             if row.text_channel_id == 0 or row.text_channel_id == message.channel.id:
                 voice_channel = message.guild.get_channel(row.voice_channel_id)
                 if isinstance(voice_channel, discord.VoiceChannel):
-                    result = await speak_in_channel(
+                    on_start = None
+                    on_end = None
+                    if len(text) >= 150:
+                        from src.cogs.tts import CancelTTSView
+
+                        view = CancelTTSView(message.author.id, message.guild.id, language)
+
+                        async def _start() -> None:
+                            try:
+                                msg = await message.reply(
+                                    view=view,
+                                    mention_author=False,
+                                )
+                                await view.register(msg)
+                            except discord.HTTPException:
+                                pass
+
+                        async def _end() -> None:
+                            await view.dismiss()
+
+                        on_start = _start
+                        on_end = _end
+
+                    await speak_in_channel(
                         message.guild,
                         voice_channel,
                         message.author.id,
                         message.author.display_name,
                         text,
                         language=language,
+                        on_play_start=on_start,
+                        on_play_end=on_end,
                     )
-                    if result.ok and len(text) >= 150:
-                        from src.cogs.tts import CancelTTSView
-                        view = CancelTTSView(message.author.id, message.guild.id, language)
-                        try:
-                            view.message = await message.reply(
-                                view=view,
-                                mention_author=False,
-                            )
-                        except discord.HTTPException:
-                            pass
                 break
 
     @commands.Cog.listener()
