@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 from collections.abc import AsyncIterator
 
@@ -22,6 +23,10 @@ _SEGMENT_MAX_CHARS = 150
 
 class TTSFailure(Exception):
     """Raised when Fish Audio synthesis fails."""
+
+
+class TTSNetworkError(TTSFailure):
+    """Raised when a Fish Audio request times out."""
 
 
 def _build_config(speed: float, volume_db: int) -> TTSConfig:
