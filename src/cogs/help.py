@@ -55,7 +55,7 @@ class HelpCommands(commands.Cog):
         language = await get_language_for_user(None, interaction.user.id, interaction=interaction)
         view = QuickHelpView(interaction.user.id, language)
         view.message = await interaction.response.send_message(
-            embed=help_embed(language), view=view
+            embed=help_embed(language), view=view, ephemeral=True
         )
 
 

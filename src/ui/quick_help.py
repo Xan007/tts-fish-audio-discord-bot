@@ -20,7 +20,7 @@ class SearchModal(discord.ui.Modal):
         self.add_item(self.query)
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=True)
         query = self.query.value.strip()
         results = await search_public_voices(
             query, limit=50, title_language=voice_language_filter(self.parent.language)

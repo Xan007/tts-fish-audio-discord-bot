@@ -65,7 +65,7 @@ class VoiceCommands(commands.Cog):
         language = await get_language_for_user(None, interaction.user.id, interaction=interaction)
         view = CatalogView(interaction.user.id, language)
         view.message = await interaction.response.send_message(
-            embed=view.categories_embed(), view=view
+            embed=view.categories_embed(), view=view, ephemeral=True
         )
 
     @voice.command(
@@ -77,7 +77,7 @@ class VoiceCommands(commands.Cog):
     )
     @app_commands.describe(query="Search terms for a voice name")
     async def voice_search(self, interaction: discord.Interaction, query: str) -> None:
-        await interaction.response.defer(ephemeral=False)
+        await interaction.response.defer(ephemeral=True)
         language = await get_language_for_user(None, interaction.user.id, interaction=interaction)
         results = await search_public_voices(
             query, limit=50, title_language=voice_language_filter(language)
@@ -88,7 +88,9 @@ class VoiceCommands(commands.Cog):
             )
             return
         view = VoicePickerView(interaction.user.id, results, query, language)
-        view.message = await interaction.followup.send(embed=view.embed(), view=view)
+        view.message = await interaction.followup.send(
+            embed=view.embed(), view=view, ephemeral=True
+        )
 
     @voice.command(
         name="set",
@@ -219,7 +221,7 @@ class VoiceCommands(commands.Cog):
                 t(language, "v_need_vc"), ephemeral=True
             )
             return
-        await interaction.response.defer(ephemeral=False)
+        await interaction.response.defer(ephemeral=True)
         if ref:
             voice = await resolve_voice(ref)
             if voice is None:
@@ -256,7 +258,7 @@ class VoiceCommands(commands.Cog):
             )
             return
         await playback.enqueue(voice_client, audio)
-        await interaction.followup.send(t(language, "v_playing_preview"))
+        await interaction.followup.send(t(language, "v_playing_preview"), ephemeral=True)
 
     @staticmethod
     async def _synthesize_for_preview(

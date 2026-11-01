@@ -77,7 +77,7 @@ STRINGS: dict[str, dict[str, str]] = {
     },
     "help_autojoin": {"en": "Autojoin", "es": "Autojoin"},
     "help_autojoin_value": {
-        "en": "/autojoin enable - reply to chat automatically",
+        "en": "/autojoin enable - read channel messages automatically; /autojoin disable - use /tts only",
         "es": "/autojoin enable - responde al chat automáticamente",
     },
     "help_language": {"en": "Language", "es": "Idioma"},
@@ -168,6 +168,22 @@ STRINGS: dict[str, dict[str, str]] = {
     "aj_disabled": {
         "en": "Autojoin disabled for this voice channel.",
         "es": "Autojoin desactivado para este canal de voz.",
+    },
+    "aj_need_vc_status": {
+        "en": "Join a voice channel first to check its speech mode.",
+        "es": "Entra a un canal de voz para consultar su modo de lectura.",
+    },
+    "aj_status_manual": {
+        "en": "Automatic reading is off here. Use `/tts` to speak.",
+        "es": "La lectura automatica esta desactivada aqui. Usa `/tts` para hablar.",
+    },
+    "aj_status_auto_voice": {
+        "en": "Automatic reading is on for messages sent in this voice channel.",
+        "es": "La lectura automatica esta activa para mensajes enviados en este canal de voz.",
+    },
+    "aj_status_auto_text": {
+        "en": "Automatic reading is on for messages sent in {channel}.",
+        "es": "La lectura automatica esta activa para mensajes enviados en {channel}.",
     },
     # speech pipeline
     "p_need_vc": {

@@ -80,7 +80,7 @@ The free plan may be enough for a small test, but this bot generates and transco
 
 | Command | Description |
 |---|---|
-| `/tts <text>` | Synthesize `text` in your configured voice. You must be in a voice channel; bot joins and plays. |
+| `/tts <text>` | Synthesize `text` in your configured voice. The bot joins your voice channel and plays it; command replies are only visible to you. |
 | `/voices` | Interactive voice catalog with categories (Anime, Video games, Spanish, etc.). |
 | `/voice search <query>` | Search the Fish Audio public Voice Library with pagination and button selection. |
 | `/voice set <ref_id_or_url>` | Save the voice for yourself. Accepts UUIDs, autocomplete, or `fish.audio` URLs. |
@@ -90,12 +90,15 @@ The free plan may be enough for a small test, but this bot generates and transco
 | `/voice preview [ref_id_or_url]` | Play a short sample with that voice (or your current one if omitted). |
 | `/voice speed <0.5-2.0>` | Set your speech rate multiplier. |
 | `/voice volume <-20 to 20>` | Set your volume adjustment in dB. |
-| `/autojoin enable` | Enable auto-join on your current voice channel. Reads chat in that channel or linked text channels/threads. |
-| `/autojoin disable` | Disable auto-join on your current voice channel. |
+| `/autojoin enable` | Automatically read messages from the channel where you run the command into your current voice channel. Run it in a voice channel to read its chat, or in a text channel to link that channel. |
+| `/autojoin disable` | Turn off automatic reading for your current voice channel. Use `/tts` when you want the bot to speak. |
+| `/autojoin status` | Check whether your current voice channel reads messages automatically or requires `/tts`. |
 | `/stop` | Immediately stops audio playback and clears the queued messages in the server. |
 | `/skip` | Skips the current audio playing in the server. |
 | `/language` | Set your UI and response language preference (`auto`, `en`, `es`). |
 | `/help` | Interactive quick start guide. |
+
+Replies to slash commands are ephemeral and visible only to the person who ran them. By default, automatic reading is off and you must use `/tts`; `/autojoin enable` opts a voice channel into reading messages automatically. Auto-read playback does not post bot announcements in the text chat.
 
 ## 🐳 Docker Deployment
 

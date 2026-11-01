@@ -32,8 +32,8 @@ class AutojoinCommands(commands.Cog):
     @autojoin.command(
         name="enable",
         description=locale_str(
-            "Enable autojoin for your current voice channel.",
-            **{"es-ES": "Activa el autojoin para tu canal de voz actual."},
+            "Automatically speak messages from this channel in your current voice channel.",
+            **{"es-ES": "Lee automáticamente en tu canal de voz los mensajes de este canal."},
         ),
     )
     async def autojoin_enable(self, interaction: discord.Interaction) -> None:
@@ -77,8 +77,8 @@ class AutojoinCommands(commands.Cog):
     @autojoin.command(
         name="disable",
         description=locale_str(
-            "Disable autojoin for your voice channel.",
-            **{"es-ES": "Desactiva el autojoin para tu canal de voz."},
+            "Stop reading messages automatically; use /tts instead.",
+            **{"es-ES": "Deja de leer mensajes automáticamente; usa /tts."},
         ),
     )
     async def autojoin_disable(self, interaction: discord.Interaction) -> None:
@@ -95,6 +95,38 @@ class AutojoinCommands(commands.Cog):
         await interaction.response.send_message(
             t(language, "aj_disabled"), ephemeral=True
         )
+
+    @autojoin.command(
+        name="status",
+        description=locale_str(
+            "Show whether messages are read automatically in your current voice channel.",
+            **{"es-ES": "Muestra si se leen mensajes automáticamente en tu canal de voz actual."},
+        ),
+    )
+    async def autojoin_status(self, interaction: discord.Interaction) -> None:
+        member = interaction.user
+        language = await get_language_for_user(None, interaction.user.id, interaction=interaction)
+        if not isinstance(member, discord.Member) or member.voice is None:
+            await interaction.response.send_message(
+                t(language, "aj_need_vc_status"), ephemeral=True
+            )
+            return
+        async with get_session() as session:
+            rows = await channels.get_autojoin_for_voice_channel(
+                session, member.guild.id, member.voice.channel.id
+            )
+        if not rows:
+            key = "aj_status_manual"
+        elif rows[0].text_channel_id == 0:
+            key = "aj_status_auto_voice"
+        else:
+            text_channel = member.guild.get_channel(rows[0].text_channel_id)
+            channel_name = text_channel.mention if text_channel else "<#{}>".format(rows[0].text_channel_id)
+            await interaction.response.send_message(
+                t(language, "aj_status_auto_text", channel=channel_name), ephemeral=True
+            )
+            return
+        await interaction.response.send_message(t(language, key), ephemeral=True)
 
     async def _refresh_stay(self, guild_id: int) -> None:
         async with get_session() as session:
@@ -131,29 +163,6 @@ class AutojoinCommands(commands.Cog):
             if row.text_channel_id == 0 or row.text_channel_id == message.channel.id:
                 voice_channel = message.guild.get_channel(row.voice_channel_id)
                 if isinstance(voice_channel, discord.VoiceChannel):
-                    on_start = None
-                    on_end = None
-                    if len(text) >= 150:
-                        from src.cogs.tts import CancelTTSView
-
-                        view = CancelTTSView(message.author.id, message.guild.id, language)
-
-                        async def _start() -> None:
-                            try:
-                                msg = await message.reply(
-                                    view=view,
-                                    mention_author=False,
-                                )
-                                await view.register(msg)
-                            except discord.HTTPException:
-                                pass
-
-                        async def _end() -> None:
-                            await view.dismiss()
-
-                        on_start = _start
-                        on_end = _end
-
                     await speak_in_channel(
                         message.guild,
                         voice_channel,
@@ -161,8 +170,6 @@ class AutojoinCommands(commands.Cog):
                         message.author.display_name,
                         text,
                         language=language,
-                        on_play_start=on_start,
-                        on_play_end=on_end,
                     )
                 break
 
