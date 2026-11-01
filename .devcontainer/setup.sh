@@ -2,7 +2,15 @@
 set -euo pipefail
 
 if ! command -v ffmpeg >/dev/null 2>&1; then
-  sudo apt-get update
+  if [ -f /etc/apt/sources.list.d/debian.sources ]; then
+    sudo apt-get \
+      -o Dir::Etc::sourcelist="sources.list.d/debian.sources" \
+      -o Dir::Etc::sourceparts="-" \
+      -o APT::Get::List-Cleanup="0" \
+      update
+  else
+    sudo apt-get update
+  fi
   sudo apt-get install -y --no-install-recommends ffmpeg libopus0
 fi
 
