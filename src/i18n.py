@@ -70,6 +70,11 @@ STRINGS: dict[str, dict[str, str]] = {
         "en": "/tts <text> - say something out loud",
         "es": "/tts <texto> - di algo en voz alta",
     },
+    "help_join": {"en": "Join voice", "es": "Entrar a voz"},
+    "help_join_value": {
+        "en": "/join - join the voice channel you are in",
+        "es": "/join - entra al canal de voz donde estás",
+    },
     "help_autojoin": {"en": "Autojoin", "es": "Autojoin"},
     "help_autojoin_value": {
         "en": "/autojoin enable - reply to chat automatically",
@@ -126,6 +131,22 @@ STRINGS: dict[str, dict[str, str]] = {
     "tts_empty": {
         "en": "Nothing to say after cleaning mentions.",
         "es": "No hay nada que decir tras limpiar las menciones.",
+    },
+    "join_need_vc": {
+        "en": "Join a voice channel first, then use `/join`.",
+        "es": "Primero entra a un canal de voz y luego usa `/join`.",
+    },
+    "join_no_permission": {
+        "en": "I need the Connect permission in {channel} to join it.",
+        "es": "Necesito el permiso Conectar en {channel} para entrar.",
+    },
+    "join_failed": {
+        "en": "I couldn't join {channel}. Check my channel permissions and try again.",
+        "es": "No pude entrar a {channel}. Revisa mis permisos en el canal e inténtalo de nuevo.",
+    },
+    "join_success": {
+        "en": "Joined {channel}.",
+        "es": "Entré a {channel}.",
     },
     # autojoin
     "aj_need_vc_enable": {

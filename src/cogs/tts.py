@@ -87,6 +87,58 @@ class TTSCommands(commands.Cog):
         self.bot = bot
 
     @app_commands.command(
+        name="join",
+        description=locale_str(
+            "Join the voice channel you are currently in.",
+            **{"es-ES": "Entra al canal de voz en el que estás."},
+        ),
+    )
+    async def join(self, interaction: discord.Interaction) -> None:
+        language = await get_language_for_user(
+            None, interaction.user.id, interaction=interaction
+        )
+        member = interaction.user
+        if interaction.guild is None or not isinstance(member, discord.Member):
+            await interaction.response.send_message(
+                t(language, "tts_server_only"), ephemeral=True
+            )
+            return
+
+        voice_state = member.voice
+        if voice_state is None or voice_state.channel is None:
+            await interaction.response.send_message(
+                t(language, "join_need_vc"), ephemeral=True
+            )
+            return
+
+        channel = voice_state.channel
+        bot_member = interaction.guild.me
+        if bot_member is None or not channel.permissions_for(bot_member).connect:
+            await interaction.response.send_message(
+                t(language, "join_no_permission", channel=channel.mention),
+                ephemeral=True,
+            )
+            return
+
+        await interaction.response.defer(ephemeral=True)
+        try:
+            await playback.ensure_connected(interaction.guild, channel)
+        except Exception:
+            logger.exception(
+                "Failed to join voice channel %s in guild %s",
+                channel.id,
+                interaction.guild.id,
+            )
+            await interaction.followup.send(
+                t(language, "join_failed", channel=channel.mention), ephemeral=True
+            )
+            return
+
+        await interaction.followup.send(
+            t(language, "join_success", channel=channel.mention), ephemeral=True
+        )
+
+    @app_commands.command(
         name="tts",
         description=locale_str(
             "Speak the given text with your configured voice in your voice channel.",

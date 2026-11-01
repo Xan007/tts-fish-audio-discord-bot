@@ -128,7 +128,9 @@ class PlaybackManager:
             self._stay.discard(guild_id)
 
     async def ensure_connected(
-        self, guild: discord.Guild, channel: discord.VoiceChannel
+        self,
+        guild: discord.Guild,
+        channel: discord.VoiceChannel | discord.StageChannel,
     ) -> discord.VoiceClient:
         guild_id = guild.id
         lock = self._connect_locks.setdefault(guild_id, asyncio.Lock())

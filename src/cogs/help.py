@@ -18,6 +18,7 @@ def help_embed(language: str) -> discord.Embed:
     )
     embed.add_field(name=t(language, "help_catalog"), value=t(language, "help_catalog_value"), inline=False)
     embed.add_field(name=t(language, "help_search"), value=t(language, "help_search_value"), inline=False)
+    embed.add_field(name=t(language, "help_join"), value=t(language, "help_join_value"), inline=False)
     embed.add_field(name=t(language, "help_speak"), value=t(language, "help_speak_value"), inline=False)
     embed.add_field(name=t(language, "help_autojoin"), value=t(language, "help_autojoin_value"), inline=False)
     embed.add_field(name=t(language, "help_language"), value=t(language, "help_language_value"), inline=False)
