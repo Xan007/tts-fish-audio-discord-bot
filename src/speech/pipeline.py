@@ -18,6 +18,7 @@ from src.store import users
 logger = logging.getLogger(__name__)
 
 _BACKLOG_WARNING_AT = 10
+_MAX_QUEUED_JOBS_PER_GUILD = 20
 
 
 @dataclass(frozen=True)
@@ -54,7 +55,7 @@ class SpeechPipeline:
 
     def __init__(
         self,
-        max_concurrency: int = 3,
+        max_concurrency: int = 1,
         manager: PlaybackManager = playback,
     ) -> None:
         self._max_concurrency = max(1, max_concurrency)
@@ -84,8 +85,13 @@ class SpeechPipeline:
             on_play_end=on_play_end,
         )
         job.future = asyncio.get_running_loop().create_future()
-        queue = self._queues.setdefault(guild_id, asyncio.Queue())
-        await queue.put(job)
+        queue = self._queues.setdefault(
+            guild_id, asyncio.Queue(maxsize=_MAX_QUEUED_JOBS_PER_GUILD)
+        )
+        try:
+            queue.put_nowait(job)
+        except asyncio.QueueFull:
+            return SpeakResult(False, t(language, "p_queue_full"))
         if queue.qsize() >= _BACKLOG_WARNING_AT and queue.qsize() % _BACKLOG_WARNING_AT == 0:
             logger.warning(
                 "Speech backlog in guild %s: %d messages queued", guild_id, queue.qsize()

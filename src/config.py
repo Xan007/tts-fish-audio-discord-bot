@@ -46,7 +46,7 @@ def load_config() -> Config:
         db_path=db_path,
         log_level=os.environ.get("LOG_LEVEL", "INFO"),
         guild_id=guild_id,
-        speech_concurrency=int(os.environ.get("SPEECH_CONCURRENCY", "3")),
+        speech_concurrency=int(os.environ.get("SPEECH_CONCURRENCY", "1")),
         voice_idle_timeout=float(os.environ.get("VOICE_IDLE_TIMEOUT", "600")),
         bot_description=os.environ.get("BOT_DESCRIPTION", ""),
     )

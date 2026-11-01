@@ -53,7 +53,13 @@ def get_engine() -> AsyncEngine:
         db_path = get_config().db_path.resolve()
         db_path.parent.mkdir(parents=True, exist_ok=True)
         url = f"sqlite+aiosqlite:///{db_path.as_posix()}"
-        _engine = create_async_engine(url, echo=False)
+        _engine = create_async_engine(
+            url,
+            echo=False,
+            pool_size=1,
+            max_overflow=0,
+            connect_args={"timeout": 30},
+        )
     return _engine
 
 

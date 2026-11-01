@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 INTENT_WARNING = (
     "Privileged intents are not enabled. Open https://discord.com/developers/applications, "
     "select your application, go to Bot -> Privileged Gateway Intents and enable "
-    "SERVER MEMBERS INTENT and MESSAGE CONTENT INTENT. Then restart the bot."
+    "MESSAGE CONTENT INTENT. Then restart the bot."
 )
 
 COGS = ("tts", "voice", "autojoin", "help", "language")
@@ -25,7 +25,6 @@ async def _run() -> None:
     await init_db()
 
     intents = discord.Intents.default()
-    intents.members = True
     intents.message_content = True
 
     bot = commands.Bot(command_prefix="!", intents=intents)

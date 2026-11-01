@@ -13,7 +13,8 @@ Discord TTS bot powered by **Fish Audio**. Each user selects their own voice fro
 - Per-user voice selection (not a single global voice)
 - Slash commands only (latest Discord API)
 - Fish Audio `s2.1-pro-free` model by default (configurable)
-- Speech pipeline: FIFO queue per server, up to `SPEECH_CONCURRENCY` (default 3) messages synthesized in parallel, playback strictly in order
+- Speech pipeline: FIFO queue per server, one synthesis request at a time by default, playback strictly in order
+- Bounded queue of 20 pending messages per server to keep memory use predictable under bursts
 - Streaming playback: audio starts as soon as Fish Audio generates the first chunk (`tts.stream()`), no full-download wait
 - Long text is split into short segments (max 150 chars) so long messages start in a few seconds and a failed segment is skipped instead of truncating the message
 - Two modes: explicit `/tts <text>` and `/autojoin enable` for channel-wide auto-read
@@ -32,11 +33,11 @@ Discord TTS bot powered by **Fish Audio**. Each user selects their own voice fro
    - `FISH_API_KEY` from https://fish.audio/app/api-keys
    - `DEFAULT_VOICE_ID` from a fish.audio voice URL (e.g. https://fish.audio/voice-library/...)
    - `TTS_MODEL` defaults to `s2.1-pro-free`; use `s2.1-pro` for paid tier
-   - `SPEECH_CONCURRENCY` defaults to `3`; max simultaneous Fish Audio synthesis requests
+   - `SPEECH_CONCURRENCY` defaults to `1`; raise it only if the host has spare CPU and memory
 
 2. Install Discord bot intents:
    - In the Discord Developer Portal open your application -> Bot
-   - Under Privileged Gateway Intents enable **SERVER MEMBERS INTENT** (for knowing who is in a voice channel) and **MESSAGE CONTENT INTENT** (for autojoin to read messages)
+   - Under Privileged Gateway Intents enable **MESSAGE CONTENT INTENT** (for autojoin to read messages)
 
 3. For each server where the bot will live, invite it with scopes `bot` and `applications.commands` and permissions: `Connect`, `Speak`, `Send Messages`, `Read Message History`, `View Channels`.
 
@@ -48,6 +49,32 @@ uv run python -m src.main
 ```
 
 Slash commands sync to every guild the bot is in on startup (appear instantly). Global commands are cleared so they never duplicate the guild copies.
+
+## GitHub Codespaces
+
+This repository includes a Codespaces development container. It installs Python 3.11, the locked Python dependencies, FFmpeg, and Opus support. Docker Compose is not needed for Codespaces, and the bot does not start automatically when a Codespace opens.
+
+1. Add `DISCORD_TOKEN` and `FISH_API_KEY` as Codespaces secrets in your GitHub account settings and grant them access to this repository. `DEFAULT_VOICE_ID` is optional; the bot has a built-in default.
+2. Create a Codespace from this repository. The first build installs the system audio tools and dependencies from `requirements.txt`.
+3. In the Codespace, choose **Terminal → Run Task → Start Discord TTS bot**. Stop it with `Ctrl+C` in its terminal when finished.
+
+You can instead create a `.env` file in the Codespace from `.env.example`; `.env` is ignored by Git. Do not commit bot or Fish Audio keys. No inbound port forwarding is needed because the bot connects out to Discord and Fish Audio.
+
+Codespaces is suitable for occasional sessions, not continuous hosting: it stops after inactivity (30 minutes by default, configurable up to 4 hours) and each Codespace has a 12-hour maximum lifetime. The personal GitHub Free allowance is 120 compute core-hours and 15 GB-month of storage; a 2-core machine uses two core-hours per running hour. Set a billing budget that stops usage at the free limit if you want to avoid charges.
+
+## Waifly deployment
+
+Waifly manages persistent servers through its Pterodactyl panel. Its documented flow is to upload files through the panel or SFTP; it does not describe connecting a Git repository for automatic deploys. Use the Python server Egg and upload the contents of this repository so `src/` and `requirements.txt` are at the server root.
+
+1. Create a Python server in Waifly. Python 3.11 or newer is required. The free plan is limited to 300 MiB RAM, 1 GiB disk, and 30% CPU.
+2. Upload the project files, including `src/`, `requirements.txt`, and `.env.example`. Do not upload your local `.env`.
+3. Install dependencies using the Python Egg's requirements installation, or run `python -m pip install -r requirements.txt` once in its console.
+4. Create `.env` in the server root with `DISCORD_TOKEN`, `FISH_API_KEY`, and `DEFAULT_VOICE_ID`. Set `DB_PATH=data/bot.db` so the SQLite database stays in the server files.
+5. Set the Startup command to `python -m src.main`. Enable auto-restart in the panel.
+6. Confirm `ffmpeg -version` works in the server console before trying voice playback. The bot needs FFmpeg to transcode Fish Audio output for Discord. If the selected Python Egg does not include FFmpeg and does not allow installing it, ask Waifly support for a Python runtime with FFmpeg; the bot can log in without it, but voice playback will fail.
+7. In the Discord Developer Portal, enable **Message Content Intent** for autojoin. The bot no longer needs the privileged Server Members Intent.
+
+The free plan may be enough for a small test, but this bot generates and transcodes audio. Keep `SPEECH_CONCURRENCY=1` and try one voice channel first; Waifly notes that audio transcoding can exceed its free CPU allowance. Upgrade the server if playback is delayed or the process reaches its CPU or memory limit. Back up `data/bot.db` before replacing the uploaded files.
 
 ## Commands
 

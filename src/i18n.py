@@ -161,6 +161,10 @@ STRINGS: dict[str, dict[str, str]] = {
     },
     "p_stopped": {"en": "Speech pipeline stopped.", "es": "El sistema de voz se detuvo."},
     "p_crashed": {"en": "Speech pipeline crashed.", "es": "El sistema de voz falló."},
+    "p_queue_full": {
+        "en": "The speech queue is full. Please try again in a moment.",
+        "es": "La cola de voz está llena. Inténtalo de nuevo en un momento.",
+    },
     # language command
     "lang_title": {"en": "Bot language", "es": "Idioma del bot"},
     "lang_desc": {
