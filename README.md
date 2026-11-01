@@ -52,7 +52,7 @@ Slash commands sync to every guild the bot is in on startup (appear instantly). 
 
 ## GitHub Codespaces
 
-This repository includes a Codespaces development container. It installs Python 3.11, the locked Python dependencies, FFmpeg, and Opus support. Docker Compose is not needed for Codespaces, and the bot does not start automatically when a Codespace opens.
+This repository includes a Codespaces development container. It prepares Python 3.11, a project-local virtual environment, the locked Python dependencies, FFmpeg, and Opus support. The bot task checks and repairs missing dependencies before launch. Docker Compose is not needed for Codespaces, and the bot does not start automatically when a Codespace opens.
 
 1. Add `DISCORD_TOKEN` and `FISH_API_KEY` as Codespaces secrets in your GitHub account settings and grant them access to this repository. `DEFAULT_VOICE_ID` is optional; the bot has a built-in default.
 2. Create a Codespace from this repository. The first build installs the system audio tools and dependencies from `requirements.txt`.

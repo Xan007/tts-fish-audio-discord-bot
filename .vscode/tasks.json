@@ -4,11 +4,10 @@
     {
       "label": "Start Discord TTS bot",
       "type": "process",
-      "command": "python",
+      "command": "bash",
       "args": [
-        "-u",
-        "-m",
-        "src.main"
+        "-lc",
+        "bash .devcontainer/setup.sh && exec .venv/bin/python -u -m src.main"
       ],
       "options": {
         "cwd": "${workspaceFolder}"
